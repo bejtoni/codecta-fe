@@ -3,82 +3,159 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ImageUploader from "@/components/ImageUploader";
 import Cropper from "@/components/Cropper";
+import PreviewResult from "@/components/PreviewResult";
 import type { CropRect } from "@/types/image";
+import { toNaturalCrop } from "@/lib/scale";
+import { previewImage } from "@/services/image.service";
+import { Button } from "@/components/ui/button";
 
 export default function ImageCropperPage() {
-    const fileRef = useRef<File | null>(null);
-    const [imgUrl, setImgUrl] = useState("");
-    const [naturalW, setNaturalW] = useState(0);
-    const [naturalH, setNaturalH] = useState(0);
-    const [displayCrop, setDisplayCrop] = useState<CropRect>({ x:0, y:0, width:0, height:0 });
+  // Držimo referencu na fajl da ga možemo slati ka BE
+  const fileRef = useRef<File | null>(null);
 
-    const onPick = (file: File, url: string) => {
-        fileRef.current = file;
-        setImgUrl(url);
-    };
+  // Frontend state: putanja do prikaza slike i dimenzije
+  const [imgUrl, setImgUrl] = useState("");
+  const [naturalW, setNaturalW] = useState(0);
+  const [naturalH, setNaturalH] = useState(0);
 
-    return (
-        <div className="container mx-auto max-w-4xl p-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>ImageCropper</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-8">
+  // Crop koordinat e u "display" pikselima (kako korisnik vidi na ekranu)
+  const [displayCrop, setDisplayCrop] = useState<CropRect>({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
-                    {/* 1) Upload */}
-                    <section className="space-y-3">
-                        <h3 className="font-semibold">1) Upload</h3>
-                        <ImageUploader onPick={onPick} />
-                        {imgUrl && (
-                            <p className="text-xs text-muted-foreground">
-                                Natural image size: {naturalW} × {naturalH}px
-                            </p>
-                        )}
-                    </section>
+  // Rezultat preview-a (Blob iz BE)
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
 
-                    <Separator />
+  // Loading indikator za dugme
+  const [busy, setBusy] = useState<boolean>(false);
 
-                    {/* 2) Crop */}
-                    <section className="space-y-3">
-                        <h3 className="font-semibold">2) Crop</h3>
-                        {imgUrl ? (
-                            <>
-                                <Cropper
-                                    imgUrl={imgUrl}
-                                    onNaturalReady={(w,h)=>{ setNaturalW(w); setNaturalH(h); }}
-                                    onDisplayCropChange={setDisplayCrop}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Crop (display px): {displayCrop.width}×{displayCrop.height} @ {displayCrop.x},{displayCrop.y}
-                                </p>
-                            </>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">Upload an image first.</p>
-                        )}
-                    </section>
+  // Upload handler — čuva fajl i prikazuje ga
+  const onPick = (file: File, url: string) => {
+    fileRef.current = file;
+    setImgUrl(url);
+    setPreviewBlob(null); // reset ranijeg preview-a na novi upload
+  };
 
-                    <Separator />
+  /**
+   * Klik na "Preview (5%)"
+   * - mjerimo render dimenzije <img> (clientWidth/Height)
+   * - pretvaramo display crop → natural crop
+   * - šaljemo na BE i prikažemo vraćeni PNG (Blob)
+   */
+  const doPreview = async () => {
+    if (!fileRef.current) {
+      alert("Upload PNG first");
+      return;
+    }
 
-                    {/* 3) Preview result (placeholder) */}
-                    <section className="space-y-3">
-                        <h3 className="font-semibold">3) Preview (5%)</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Coming next: button to call backend and render preview PNG here.
-                        </p>
-                    </section>
+    // Dohvati trenutno renderovani <img> (iz Cropper-a) da uzmemo "rendered" dimenzije
+    const imgEl = document.querySelector<HTMLImageElement>('img[alt="source"]');
+    const renderedW = imgEl?.clientWidth ?? 0;
+    const renderedH = imgEl?.clientHeight ?? 0;
 
-                    <Separator />
-
-                    {/* 4) Config + 5) Generate (placeholder) */}
-                    <section className="space-y-1">
-                        <h3 className="font-semibold">4) Config (optional) & 5) Generate</h3>
-                        <p className="text-sm text-muted-foreground">
-                            After preview, we’ll add config form (logo/position/scale) and Generate button.
-                        </p>
-                    </section>
-
-                </CardContent>
-            </Card>
-        </div>
+    // Pretvori display → original (natural) px
+    const nat = toNaturalCrop(
+      displayCrop,
+      naturalW,
+      naturalH,
+      renderedW,
+      renderedH
     );
+    if (nat.width <= 0 || nat.height <= 0) {
+      alert("Select a crop area");
+      return;
+    }
+
+    try {
+      setBusy(true);
+      const blob = await previewImage(fileRef.current, nat);
+      setPreviewBlob(blob);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unexpected error";
+      alert(msg);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto max-w-4xl p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>ImageCropper</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-8">
+          {/* 1) Upload */}
+          <section className="space-y-3">
+            <h3 className="font-semibold">1) Upload</h3>
+            <ImageUploader onPick={onPick} />
+            {imgUrl && (
+              <p className="text-xs text-muted-foreground">
+                Natural image size: {naturalW} × {naturalH}px
+              </p>
+            )}
+          </section>
+
+          <Separator />
+
+          {/* 2) Crop */}
+          <section className="space-y-3">
+            <h3 className="font-semibold">2) Crop</h3>
+            {imgUrl ? (
+              <>
+                <Cropper
+                  imgUrl={imgUrl}
+                  onNaturalReady={(w, h) => {
+                    setNaturalW(w);
+                    setNaturalH(h);
+                  }}
+                  onDisplayCropChange={setDisplayCrop}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Crop (display px): {displayCrop.width}×{displayCrop.height} @{" "}
+                  {displayCrop.x},{displayCrop.y}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Upload an image first.
+              </p>
+            )}
+          </section>
+
+          <Separator />
+
+          {/* 3) Preview (5%) */}
+          <section className="space-y-3">
+            <h3 className="font-semibold">3) Preview (5%)</h3>
+            <Button variant="secondary" onClick={doPreview} disabled={busy || !imgUrl}>
+              {busy
+                ? "Previewing…" // dok se učitava
+                : imgUrl
+                ? "Click to preview (5%)" // kad je uploadana slika
+                : "Upload image first"}{" "}
+            </Button>
+            {/* Prikaz vraćenog PNG-a */}
+            <PreviewResult blob={previewBlob} />
+          </section>
+
+          <Separator />
+
+          {/* 4) Config + 5) Generate dolaze u narednim fazama */}
+          <section className="space-y-1">
+            <h3 className="font-semibold">
+              4) Config (optional) & 5) Generate
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Next: dodajemo Config (logo/position/scale) i Generate (full
+              quality).
+            </p>
+          </section>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
