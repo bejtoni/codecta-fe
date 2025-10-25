@@ -8,6 +8,7 @@ import type { CropRect } from "@/types/image";
 import { toNaturalCrop } from "@/lib/scale";
 import {generateImage, previewImage} from "@/services/image.service";
 import { Button } from "@/components/ui/button";
+import ConfigPanel from "@/components/ConfigPanel.tsx";
 // import ConfigPanel from "@/components/ConfigPanel";
 
 export default function ImageCropperPage() {
@@ -75,10 +76,18 @@ export default function ImageCropperPage() {
       return;
     }
 
+
+
     try {
       setBusy(true);
       const blob = await previewImage(fileRef.current, nat);
       setPreviewBlob(blob);
+
+      // DEBUG : provjeri u clg sta je vratio window i popup slike u novom prozoru
+      // console.log("[preview] blob type/size:", blob.type, blob.size);
+      // const tmp = URL.createObjectURL(blob);
+      // window.open(tmp, "_blank");
+
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected error";
       alert(msg);
@@ -112,7 +121,7 @@ export default function ImageCropperPage() {
     try {
       setGenBusy(true);
       // ⚙️ Ako configId postoji → BE će primijeniti logo overlay
-      const blob = await generateImage(fileRef.current, { crop: nat, configId });
+      const blob = await generateImage(fileRef.current, { rect: nat, configId });
 
       // Automatski download rezultata
       const url = URL.createObjectURL(blob);
@@ -151,7 +160,7 @@ export default function ImageCropperPage() {
 
           <Separator />
 
-          {/* 2) Crop */}
+          {/* 2) Crop  - FIX: selected size ! od natural size, jer je skaliran na kontejner, nadi fix*/}
           <section className="space-y-3">
             <h3 className="font-semibold">2) Crop</h3>
             {imgUrl ? (
@@ -165,7 +174,7 @@ export default function ImageCropperPage() {
                   onDisplayCropChange={setDisplayCrop}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Crop (display px): {displayCrop.width}×{displayCrop.height} @{" "}
+                  Crop (display in % of the picture): {displayCrop.width}×{displayCrop.height} @{" "}
                   {displayCrop.x},{displayCrop.y}
                 </p>
               </>
@@ -194,27 +203,13 @@ export default function ImageCropperPage() {
 
           <Separator />
 
-          {/* 4) Config + 5) Generate dolaze u narednim fazama */}
-          <section className="space-y-1">
-            <h3 className="font-semibold">
-              4) Config (optional) & 5) Generate
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Next: dodajemo Config (logo/position/scale) i Generate (full
-              quality).
-            </p>
-          </section>
-
           {/* 4) Config (optional) */}
           <section className="space-y-3">
             <h3 className="font-semibold">4) Config (optional logo)</h3>
-
-            {/* Kada se napravi config panel ovo odkoment
-            <ConfigPanel onSaved={(id)=>setConfigId(id)} />
-            */}
-
-            {/* Prikaz id ako je hardkodovan - temporary */}
-            <p className="text-xs text-muted-foreground">Active config ID: {configId ?? "none"}</p>
+            <ConfigPanel onSaved={(id) => setConfigId(id)} />
+            <p className="text-xs text-muted-foreground">
+              Current config ID: {configId ?? "none"}
+            </p>
           </section>
 
           <Separator />

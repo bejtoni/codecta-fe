@@ -17,6 +17,7 @@ export default function ConfigPanel({ onSaved }:{ onSaved:(id:number)=>void }) {
     const [position, setPosition] = useState<LogoPosition>("TOP_RIGHT")
     const [scale, setScale] = useState<number>(0.15) // 15%
     const [busy, setBusy] = useState(false)
+    const [lastSavedId, setLastSavedId] = useState<number | null>(null);
 
     // Ako postoji ranije spremljen configId — korisno za reload
     useEffect(()=>{
@@ -25,19 +26,25 @@ export default function ConfigPanel({ onSaved }:{ onSaved:(id:number)=>void }) {
     }, [onSaved])
 
     const save = async () => {
-        if (!logo) return alert("Upload logo (PNG)")
+        if (!logo) return alert("Upload logo (PNG)");
         try {
-            setBusy(true)
-            const { id } = await createConfig({ logoImage: logo, logoPosition: position, scaleDown: scale })
-            localStorage.setItem("configId", String(id)) // spremi da preživi refresh
-            onSaved(id)
+            setBusy(true);
+            const cfg = await createConfig({
+                logoImage: logo,
+                logoPosition: position,
+                scaleDown: scale,
+            });
+            setLastSavedId(cfg.id);
+            localStorage.setItem("configId", String(cfg.id));
+            onSaved(cfg.id);
+            alert(`Config saved (ID: ${cfg.id})`);
         } catch (e) {
             const msg = e instanceof Error ? e.message : "Unexpected error";
             alert(msg);
         } finally {
-            setBusy(false)
+            setBusy(false);
         }
-    }
+    };
 
     return (
         <div className="space-y-4">
@@ -67,9 +74,15 @@ export default function ConfigPanel({ onSaved }:{ onSaved:(id:number)=>void }) {
                 <p className="text-xs text-muted-foreground">Current: {(scale*100).toFixed(0)}%</p>
             </div>
 
-            <Button onClick={save} disabled={busy}>
+            <Button variant="secondary" onClick={save} disabled={busy}>
                 {busy ? "Saving…" : "Save Config"}
             </Button>
+
+            {lastSavedId && (
+                <p className="text-xs text-muted-foreground text-center">
+                    Active config ID: {lastSavedId}
+                </p>
+            )}
         </div>
     )
 }

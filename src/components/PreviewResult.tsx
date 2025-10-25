@@ -11,7 +11,8 @@ export default function PreviewResult({ blob }: { blob: Blob | null }) {
             <img
                 src={url}
                 alt="preview"
-                className="rounded-md border"
+                // FIX: nastimaj width i height na neki nacin da je optialno da uveca sliku malu
+                className="rounded-md border w-[320px]"
                 // revokeObjectURL briše privremeni URL iz memorije kad se slika učita - sprječava curenje memorije
                 onLoad={() => URL.revokeObjectURL(url)}
             />
