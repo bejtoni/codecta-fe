@@ -15,7 +15,7 @@ export async function createConfig(input: CreateConfigInput): Promise<ConfigResp
     return res.data as ConfigResponse
 }
 
-/**
+/**s
  * Dohvati jedan config po ID-u
  * GET /api/config/{id}
  */

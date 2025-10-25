@@ -141,7 +141,7 @@ export default function ImageCropperPage() {
 
 
   return (
-    <div className="container mx-auto max-w-4xl p-6">
+    <div className="container mx-auto max-w-6xl p-6">
       <Card>
         <CardHeader>
           <CardTitle>ImageCropper</CardTitle>
