@@ -6,8 +6,9 @@ import Cropper from "@/components/Cropper";
 import PreviewResult from "@/components/PreviewResult";
 import type { CropRect } from "@/types/image";
 import { toNaturalCrop } from "@/lib/scale";
-import { previewImage } from "@/services/image.service";
+import {generateImage, previewImage} from "@/services/image.service";
 import { Button } from "@/components/ui/button";
+// import ConfigPanel from "@/components/ConfigPanel";
 
 export default function ImageCropperPage() {
   // Držimo referencu na fajl da ga možemo slati ka BE
@@ -31,6 +32,11 @@ export default function ImageCropperPage() {
 
   // Loading indikator za dugme
   const [busy, setBusy] = useState<boolean>(false);
+  const [genBusy, setGenBusy] = useState(false) // odvojen loading za Generate
+
+  // State za configId
+  const [configId, setConfigId] = useState<number | undefined>(undefined)
+
 
   // Upload handler — čuva fajl i prikazuje ga
   const onPick = (file: File, url: string) => {
@@ -80,6 +86,50 @@ export default function ImageCropperPage() {
       setBusy(false);
     }
   };
+
+  /**
+   * Klik na "Generate PNG"
+   * - isti mapping kao kod preview-a (display → natural)
+   * - šaljemo /api/image/generate (sa ili bez configId)
+   * - BE vraća full-quality PNG → automatski download
+   */
+  const doGenerate = async () => {
+    if (!fileRef.current) {
+      alert("Upload PNG first");
+      return;
+    }
+
+    const imgEl = document.querySelector<HTMLImageElement>('img[alt="source"]');
+    const renderedW = imgEl?.clientWidth ?? 0;
+    const renderedH = imgEl?.clientHeight ?? 0;
+
+    const nat = toNaturalCrop(displayCrop, naturalW, naturalH, renderedW, renderedH);
+    if (nat.width <= 0 || nat.height <= 0) {
+      alert("Select a crop area");
+      return;
+    }
+
+    try {
+      setGenBusy(true);
+      // ⚙️ Ako configId postoji → BE će primijeniti logo overlay
+      const blob = await generateImage(fileRef.current, { crop: nat, configId });
+
+      // Automatski download rezultata
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "cropped.png";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unexpected error";
+      alert(msg);
+    } finally {
+      setGenBusy(false);
+    }
+  };
+
+
 
   return (
     <div className="container mx-auto max-w-4xl p-6">
@@ -152,6 +202,44 @@ export default function ImageCropperPage() {
             <p className="text-sm text-muted-foreground">
               Next: dodajemo Config (logo/position/scale) i Generate (full
               quality).
+            </p>
+          </section>
+
+          {/* 4) Config (optional) */}
+          <section className="space-y-3">
+            <h3 className="font-semibold">4) Config (optional logo)</h3>
+
+            {/* Kada se napravi config panel ovo odkoment
+            <ConfigPanel onSaved={(id)=>setConfigId(id)} />
+            */}
+
+            {/* Prikaz id ako je hardkodovan - temporary */}
+            <p className="text-xs text-muted-foreground">Active config ID: {configId ?? "none"}</p>
+          </section>
+
+          <Separator />
+
+          {/* 5) Generate (full quality) */}
+          <section className="space-y-3">
+            <h3 className="font-semibold">5) Generate (full quality)</h3>
+            <Button
+                variant="outline"
+                onClick={doGenerate}
+                disabled={genBusy || !imgUrl}
+                className={`transition-all ${imgUrl ? "opacity-100" : "opacity-60 cursor-not-allowed"}`}
+            >
+              {genBusy
+                  ? "Generating…"
+                  : !imgUrl
+                      ? "Upload image first"
+                      : configId
+                          ? "Generate PNG (with logo)"
+                          : "Generate PNG"}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {configId
+                  ? "Logo overlay će biti primijenjen (active config)."
+                  : "Logo overlay nije postavljen (no config)."}
             </p>
           </section>
         </CardContent>

@@ -19,3 +19,24 @@ export async function previewImage(file: File, crop: CropRect): Promise<Blob> {
     const res = await api.post('/api/image/preview', fd, { responseType: 'blob' })
     return res.data
 }
+
+/**
+ * poziva /api/image/generate
+ * Šalje file + meta JSON (crop + opcionalno configId).
+ * Backend vraća full-quality cropped PNG kao Blob.
+ */
+export async function generateImage(
+    file: File,
+    meta: { crop: CropRect; configId?: number }
+): Promise<Blob> {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append(
+        "meta",
+        new Blob([JSON.stringify(meta)], { type: "application/json" })
+    );
+
+    // responseType: 'blob' jer backend vraća image/png binary
+    const res = await api.post("/api/image/generate", fd, { responseType: "blob" });
+    return res.data;
+}
