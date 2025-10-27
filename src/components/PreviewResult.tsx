@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useEffect, useMemo } from "react";
 
 /**
  * Prikaz PNG Blob-a iz BE.
@@ -6,16 +7,25 @@ import { Button } from "@/components/ui/button";
  */
 export default function PreviewResult({
   blob,
-  title = "Preview (5%)",
   showDownload = false,
 }: {
   blob: Blob | null;
   title?: string;
   showDownload?: boolean;
 }) {
-  if (!blob) return null;
+  // URL se kreira SAMO kada se blob promijeni
+  const url = useMemo(() => {
+    return blob ? URL.createObjectURL(blob) : null;
+  }, [blob]);
 
-  const url = URL.createObjectURL(blob);
+  // Cleanup kada se komponenta unmounta
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  if (!blob || !url) return null;
 
   const handleDownload = () => {
     const a = document.createElement("a");
@@ -26,17 +36,15 @@ export default function PreviewResult({
 
   return (
     <div className="space-y-2">
-      <p className="text-sm text-muted-foreground">{title}</p>
-      <img
-        src={url}
-        alt="result"
-        className="rounded-md border w-[320px]"
-        onLoad={() => URL.revokeObjectURL(url)}
-      />
+      <div className="flex justify-center">
+        <img src={url} alt="result" className="rounded-md border w-full" />
+      </div>
       {showDownload && (
-        <Button variant="outline" size="sm" onClick={handleDownload}>
-          Download
-        </Button>
+        <div className="flex justify-center">
+          <Button variant="outline" size="sm" onClick={handleDownload}>
+            Download
+          </Button>
+        </div>
       )}
     </div>
   );

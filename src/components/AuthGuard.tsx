@@ -1,19 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { isTokenExpired, getCurrentUser } from "@/services/auth.service";
-import type { AuthUser } from "@/types/auth";
+import { useAuthStore } from "@/stores/auth.store";
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export default function AuthGuard({ children }: AuthGuardProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const { isLoading, isAuthenticated, login, logout, setLoading } =
+    useAuthStore();
 
   useEffect(() => {
     const checkAuth = async () => {
-      setIsLoading(true);
+      setLoading(true);
 
       try {
         // Get ID token from localStorage
@@ -31,20 +30,25 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
         // Try to get current user from API (this validates the token)
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
-        setIsAuthenticated(true);
+
+        // Update auth store
+        login(currentUser, {
+          accessToken: idToken,
+          idToken: idToken,
+          expiresAt: Date.now() + 3600000, // 1 hour
+        });
       } catch (error) {
         // Token is invalid or expired
         localStorage.removeItem("idToken");
-        setIsAuthenticated(false);
+        logout();
         window.location.href = "/login";
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
     checkAuth();
-  }, []);
+  }, [setLoading, login, logout]);
 
   if (isLoading) {
     return (

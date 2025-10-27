@@ -11,21 +11,6 @@ export async function getCurrentUser(): Promise<AuthUser> {
 }
 
 /**
- * Decode JWT ID token to get user info (email, sub)
- */
-export function decodeIdToken(idToken: string): AuthUser {
-  try {
-    const payload = JSON.parse(atob(idToken.split(".")[1]));
-    return {
-      userId: payload.sub,
-      email: payload.email,
-    };
-  } catch (error) {
-    throw new Error("Failed to decode ID token");
-  }
-}
-
-/**
  * Check if JWT token is expired
  */
 export function isTokenExpired(idToken: string): boolean {
@@ -34,7 +19,7 @@ export function isTokenExpired(idToken: string): boolean {
     const exp = payload.exp;
     if (!exp) return true;
     return Date.now() >= exp * 1000;
-  } catch (error) {
+  } catch{
     return true;
   }
 }

@@ -35,7 +35,7 @@ export default function LoginPage() {
           // Redirect to app
           window.location.href = "/";
         } catch (error) {
-          console.error("Login failed:", error);
+          alert("Login Failed. Please try again.");
         }
       },
     });

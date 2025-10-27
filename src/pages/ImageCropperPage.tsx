@@ -40,9 +40,6 @@ export default function ImageCropperPage() {
   const [busy, setBusy] = useState<boolean>(false);
   const [genBusy, setGenBusy] = useState(false); // odvojen loading za Generate
 
-  // State za configId
-  const [configId, setConfigId] = useState<number | undefined>(undefined);
-
   // Upload handler — čuva fajl i prikazuje ga
   const onPick = (file: File, url: string) => {
     fileRef.current = file;
@@ -84,11 +81,6 @@ export default function ImageCropperPage() {
       setBusy(true);
       const blob = await previewImage(fileRef.current, nat);
       setPreviewBlob(blob);
-
-      // DEBUG : provjeri u clg sta je vratio window i popup slike u novom prozoru
-      // console.log("[preview] blob type/size:", blob.type, blob.size);
-      // const tmp = URL.createObjectURL(blob);
-      // window.open(tmp, "_blank");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected error";
       alert(msg);
@@ -144,17 +136,13 @@ export default function ImageCropperPage() {
     <div className="container mx-auto min-w-xl p-6">
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>ImageCropper</CardTitle>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Welcome, {user?.email}
-              </span>
-              <Button variant="outline" size="sm" onClick={logout}>
-                Logout
-              </Button>
-            </div>
+          <div className="flex justify-end mb-4">
+            <Button variant="outline" size="sm" onClick={logout}>
+              Logout
+            </Button>
           </div>
+          <CardTitle>ImageCropper</CardTitle>
+          <span className="text-sm text-gray-600">Welcome, {user?.email}</span>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* 1) Upload */}
@@ -184,8 +172,9 @@ export default function ImageCropperPage() {
                   onDisplayCropChange={setDisplayCrop}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Crop (display in % of the picture): {displayCrop.width}×
-                  {displayCrop.height} @ {displayCrop.x},{displayCrop.y}
+                  Crop (display in px proportional to natural size):{" "}
+                  {displayCrop.width}×{displayCrop.height} @ {displayCrop.x},
+                  {displayCrop.y}
                 </p>
               </>
             ) : (
@@ -212,7 +201,9 @@ export default function ImageCropperPage() {
                 : "Upload image first"}{" "}
             </Button>
             {/* Prikaz vraćenog PNG-a */}
-            <PreviewResult blob={previewBlob} />
+            <div className="w-[300px] mx-auto border">
+              <PreviewResult blob={previewBlob} />
+            </div>
           </section>
 
           <Separator />
@@ -220,10 +211,7 @@ export default function ImageCropperPage() {
           {/* 4) Config (optional) */}
           <section className="space-y-3">
             <h3 className="font-semibold">4) Config (optional logo)</h3>
-            <ConfigPanel onSaved={(id) => setConfigId(id)} />
-            <p className="text-xs text-muted-foreground">
-              Current config ID: {configId ?? "none"}
-            </p>
+            <ConfigPanel />
           </section>
 
           <Separator />

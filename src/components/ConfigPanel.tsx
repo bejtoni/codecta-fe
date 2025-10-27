@@ -24,11 +24,7 @@ import type { ConfigResponse } from "@/types/config";
  * - Save: ako mijenjaš logo → POST /api/config (multipart UPSERT)
  * - Save: ako ne mijenjaš logo → PUT /api/config/me (JSON)
  */
-export default function ConfigPanel({
-  onSaved,
-}: {
-  onSaved: (id: number) => void;
-}) {
+export default function ConfigPanel() {
   const [logo, setLogo] = useState<File | null>(null);
   const [position, setPosition] = useState<LogoPosition>("TOP_RIGHT");
   const [scale, setScale] = useState<number>(0.15); // 15%
@@ -48,15 +44,11 @@ export default function ConfigPanel({
         setPosition(config.logoPosition);
         setScale(config.scaleDown);
         setHasLogo(!!config.logoPath);
-        onSaved(config.id);
-      } catch (error) {
-        // 404 or other error - create mode
-        console.log("No existing config found, entering create mode");
-      }
+      } catch {}
     };
 
     fetchConfig();
-  }, [onSaved]);
+  }, []);
 
   // Handle logo file selection with validation
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +116,6 @@ export default function ConfigPanel({
       setCurrentConfig(config);
       setHasLogo(!!config.logoPath);
       setLogoChanged(false);
-      onSaved(config.id);
 
       // Show success message
       const action = logoChanged || !currentConfig ? "created" : "updated";
