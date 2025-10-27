@@ -1,21 +1,43 @@
+import { Button } from "@/components/ui/button";
+
 /**
- * Jednostavan prikaz PNG Blob-a iz BE.
+ * Prikaz PNG Blob-a iz BE.
  * URL.createObjectURL se automatski revoke-a poslije onLoad.
  */
-export default function PreviewResult({ blob }: { blob: Blob | null }) {
-    if (!blob) return null
-    const url = URL.createObjectURL(blob)
-    return (
-        <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Preview (5%)</p>
-            <img
-                src={url}
-                alt="preview"
-                // FIX: nastimaj width i height na neki nacin da je optialno da uveca sliku malu
-                className="rounded-md border w-[320px]"
-                // revokeObjectURL briše privremeni URL iz memorije kad se slika učita - sprječava curenje memorije
-                onLoad={() => URL.revokeObjectURL(url)}
-            />
-        </div>
-    )
+export default function PreviewResult({
+  blob,
+  title = "Preview (5%)",
+  showDownload = false,
+}: {
+  blob: Blob | null;
+  title?: string;
+  showDownload?: boolean;
+}) {
+  if (!blob) return null;
+
+  const url = URL.createObjectURL(blob);
+
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cropped.png";
+    a.click();
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-muted-foreground">{title}</p>
+      <img
+        src={url}
+        alt="result"
+        className="rounded-md border w-[320px]"
+        onLoad={() => URL.revokeObjectURL(url)}
+      />
+      {showDownload && (
+        <Button variant="outline" size="sm" onClick={handleDownload}>
+          Download
+        </Button>
+      )}
+    </div>
+  );
 }

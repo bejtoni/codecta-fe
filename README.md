@@ -1,6 +1,51 @@
-# React + TypeScript + Vite
+# ImageCropper Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript + Vite application for image cropping with OIDC authentication.
+
+## Features
+
+- **OIDC Authentication**: Google OAuth with Authorization Code + PKCE flow
+- **Image Cropping**: Interactive image cropping with preview
+- **Logo Overlay**: Configurable logo positioning and scaling
+- **Protected Routes**: AuthGuard protects authenticated pages
+- **Token Management**: Automatic token refresh and API integration
+
+## Authentication Setup
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Google OAuth Configuration
+VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+
+# API Configuration
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+### Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable Google+ API
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URI: `http://localhost:5173/callback` (or your domain)
+6. Copy the Client ID to your `.env` file
+
+## Authentication Flow
+
+1. **Login**: User clicks "Sign in with Google" → redirects to Google OAuth
+2. **Callback**: Google redirects to `/callback` with authorization code
+3. **Token Exchange**: Frontend exchanges code for access/ID tokens using PKCE
+4. **API Integration**: Axios interceptor adds `Authorization: Bearer` header
+5. **Token Refresh**: Automatic token refresh on 401 responses
+6. **Protected Routes**: AuthGuard checks authentication status
+
+## API Endpoints
+
+- `GET /api/auth/me` - Returns current user info `{ userId, email }`
+- All `/api/**` endpoints require valid Bearer token
 
 Currently, two official plugins are available:
 
@@ -17,9 +62,9 @@ If you are developing a production application, we recommend updating the config
 
 ```js
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
 
@@ -34,40 +79,40 @@ export default defineConfig([
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from "eslint-plugin-react-x";
+import reactDom from "eslint-plugin-react-dom";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
       // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
+      reactX.configs["recommended-typescript"],
       // Enable lint rules for React DOM
       reactDom.configs.recommended,
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```
