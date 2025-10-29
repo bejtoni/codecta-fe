@@ -27,13 +27,19 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true,
           isLoading: false,
         }),
-      logout: () =>
+      logout: () => {
+        // Clear localStorage
+        localStorage.removeItem("idToken");
+        // Clear auth state
         set({
           user: null,
           tokens: null,
           isAuthenticated: false,
           isLoading: false,
-        }),
+        });
+        // Redirect to login page
+        window.location.href = "/login";
+      },
       setLoading: (isLoading) => set({ isLoading }),
     }),
     {
