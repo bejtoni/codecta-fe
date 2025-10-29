@@ -37,8 +37,9 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           idToken: idToken,
           expiresAt: Date.now() + 3600000, // 1 hour
         });
-      } catch (error) {
+      } catch (error:unknown) {
         // Token is invalid or expired
+        console.error("Auth error:", error);
         localStorage.removeItem("idToken");
         logout();
         window.location.href = "/login";

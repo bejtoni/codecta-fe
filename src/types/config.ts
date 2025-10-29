@@ -12,6 +12,3 @@ export type CreateConfigInput = {
     logoPosition: ConfigResponse['logoPosition']
     logoImage?: File
 }
-
-// Za update (logo slika je opcionalno nova)
-export type UpdateConfigInput = Partial<CreateConfigInput>

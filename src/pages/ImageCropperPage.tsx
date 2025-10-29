@@ -89,23 +89,17 @@ export default function ImageCropperPage() {
   };
 
   /**
-   * Klik na "Preview (5%)"
-   * - mjerimo render dimenzije <img> (clientWidth/Height)
-   * - pretvaramo display crop → natural crop
-   * - šaljemo na BE i prikažemo vraćeni PNG (Blob)
+   * Helper: izračuna natural crop iz display crop-a koristeći trenutne render dimenzije <img>.
+   * Vraća natural crop ili null ako validacija ne prođe (nema fajla/slika/crop-a).
    */
-  const doPreview = async () => {
-    if (!fileRef.current) {
-      alert("Upload PNG first");
-      return;
-    }
+  const getNaturalCrop = (): CropRect | null => {
+    if (!fileRef.current) return null;
 
-    // Dohvati trenutno renderovani <img> (iz Cropper-a) da uzmemo "rendered" dimenzije
     const imgEl = document.querySelector<HTMLImageElement>('img[alt="source"]');
     const renderedW = imgEl?.clientWidth ?? 0;
     const renderedH = imgEl?.clientHeight ?? 0;
+    if (renderedW <= 0 || renderedH <= 0) return null;
 
-    // Pretvori display → original (natural) px
     const nat = toNaturalCrop(
       displayCrop,
       naturalW,
@@ -113,14 +107,26 @@ export default function ImageCropperPage() {
       renderedW,
       renderedH
     );
-    if (nat.width <= 0 || nat.height <= 0) {
-      alert("Select a crop area");
+    if (nat.width <= 0 || nat.height <= 0) return null;
+    return nat;
+  };
+
+  /**
+   * Klik na "Preview (5%)"
+   * - mjerimo render dimenzije <img> (clientWidth/Height)
+   * - pretvaramo display crop → natural crop
+   * - šaljemo na BE i prikažemo vraćeni PNG (Blob)
+   */
+  const doPreview = async () => {
+    const nat = getNaturalCrop();
+    if (!nat) {
+      alert(!fileRef.current ? "Upload PNG first" : "Select a crop area");
       return;
     }
 
     try {
       setBusy(true);
-      const blob = await previewImage(fileRef.current, nat);
+      const blob = await previewImage(fileRef.current!, nat);
       setPreviewBlob(blob);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unexpected error";
@@ -137,31 +143,16 @@ export default function ImageCropperPage() {
    * - BE vraća full-quality PNG → automatski download
    */
   const doGenerate = async () => {
-    if (!fileRef.current) {
-      alert("Upload PNG first");
-      return;
-    }
-
-    const imgEl = document.querySelector<HTMLImageElement>('img[alt="source"]');
-    const renderedW = imgEl?.clientWidth ?? 0;
-    const renderedH = imgEl?.clientHeight ?? 0;
-
-    const nat = toNaturalCrop(
-      displayCrop,
-      naturalW,
-      naturalH,
-      renderedW,
-      renderedH
-    );
-    if (nat.width <= 0 || nat.height <= 0) {
-      alert("Select a crop area");
+    const nat = getNaturalCrop();
+    if (!nat) {
+      alert(!fileRef.current ? "Upload PNG first" : "Select a crop area");
       return;
     }
 
     try {
       setGenBusy(true);
       // BE automatski koristi "me" config za logo overlay
-      const blob = await generateImage(fileRef.current, nat);
+      const blob = await generateImage(fileRef.current!, nat);
 
       // Spremi rezultat za prikaz
       setGeneratedBlob(blob);

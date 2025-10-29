@@ -13,6 +13,6 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    strictPort: true, // sprječava automatsko prebacivanje na 5174
+    strictPort: true, // sprjecava automatsko prebacivanje na 5174
   },
 });
