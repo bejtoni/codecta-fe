@@ -47,6 +47,47 @@ export default function ImageCropperPage() {
     setPreviewBlob(null); // reset ranijeg preview-a na novi upload
   };
 
+  // Izračunaj proporcije crop-a u odnosu na natural dimenzije
+  const getCropProportions = () => {
+    if (
+      displayCrop.width <= 0 ||
+      displayCrop.height <= 0 ||
+      naturalW <= 0 ||
+      naturalH <= 0
+    ) {
+      return null;
+    }
+
+    const imgEl = document.querySelector<HTMLImageElement>('img[alt="source"]');
+    if (!imgEl) {
+      return null;
+    }
+
+    const renderedW = imgEl.clientWidth;
+    const renderedH = imgEl.clientHeight;
+
+    if (renderedW <= 0 || renderedH <= 0) {
+      return null;
+    }
+
+    // Konvertuj display crop u natural crop
+    const naturalCrop = toNaturalCrop(
+      displayCrop,
+      naturalW,
+      naturalH,
+      renderedW,
+      renderedH
+    );
+
+    // Izračunaj proporcije u odnosu na natural dimenzije
+    return {
+      width: (naturalCrop.width / naturalW).toFixed(2),
+      height: (naturalCrop.height / naturalH).toFixed(2),
+      x: (naturalCrop.x / naturalW).toFixed(2),
+      y: (naturalCrop.y / naturalH).toFixed(2),
+    };
+  };
+
   /**
    * Klik na "Preview (5%)"
    * - mjerimo render dimenzije <img> (clientWidth/Height)
@@ -141,13 +182,13 @@ export default function ImageCropperPage() {
               Logout
             </Button>
           </div>
-          <CardTitle>ImageCropper</CardTitle>
+          <CardTitle className="text-3xl">ImageCropper</CardTitle>
           <span className="text-sm text-gray-600">Welcome, {user?.email}</span>
         </CardHeader>
         <CardContent className="space-y-8">
           {/* 1) Upload */}
           <section className="space-y-3">
-            <h3 className="font-semibold">1) Upload</h3>
+            <h3 className="font-semibold text-xl">1) Upload</h3>
             <ImageUploader onPick={onPick} />
             {imgUrl && (
               <p className="text-xs text-muted-foreground">
@@ -160,7 +201,7 @@ export default function ImageCropperPage() {
 
           {/* 2) Crop  - FIX: selected size ! od natural size, jer je skaliran na kontejner, nadi fix*/}
           <section className="space-y-3">
-            <h3 className="font-semibold">2) Crop</h3>
+            <h3 className="font-semibold text-xl">2) Crop</h3>
             {imgUrl ? (
               <>
                 <Cropper
@@ -172,9 +213,19 @@ export default function ImageCropperPage() {
                   onDisplayCropChange={setDisplayCrop}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Crop (display in px proportional to natural size):{" "}
-                  {displayCrop.width}×{displayCrop.height} @ {displayCrop.x},
-                  {displayCrop.y}
+                  Crop (proportional to natural size):{" "}
+                  {(() => {
+                    const proportions = getCropProportions();
+                    if (proportions) {
+                      return (
+                        <>
+                          {proportions.width}×{proportions.height} @{" "}
+                          {proportions.x}, {proportions.y}
+                        </>
+                      );
+                    }
+                    return `${displayCrop.width}×${displayCrop.height} @ ${displayCrop.x}, ${displayCrop.y}`;
+                  })()}
                 </p>
               </>
             ) : (
@@ -188,7 +239,7 @@ export default function ImageCropperPage() {
 
           {/* 3) Preview (5%) */}
           <section className="space-y-3">
-            <h3 className="font-semibold">3) Preview (5%)</h3>
+            <h3 className="font-semibold text-xl">3) Preview (5%)</h3>
             <Button
               variant="secondary"
               onClick={doPreview}
@@ -201,7 +252,7 @@ export default function ImageCropperPage() {
                 : "Upload image first"}{" "}
             </Button>
             {/* Prikaz vraćenog PNG-a */}
-            <div className="w-[300px] mx-auto border">
+            <div className="w-[300px] mx-auto">
               <PreviewResult blob={previewBlob} />
             </div>
           </section>
@@ -210,7 +261,7 @@ export default function ImageCropperPage() {
 
           {/* 4) Config (optional) */}
           <section className="space-y-3">
-            <h3 className="font-semibold">4) Config (optional logo)</h3>
+            <h3 className="font-semibold text-xl">4) Config (optional logo)</h3>
             <ConfigPanel />
           </section>
 
@@ -218,7 +269,9 @@ export default function ImageCropperPage() {
 
           {/* 5) Generate (full quality) */}
           <section className="space-y-3">
-            <h3 className="font-semibold">5) Generate (full quality)</h3>
+            <h3 className="font-semibold text-xl">
+              5) Generate (full quality)
+            </h3>
             <Button
               variant="outline"
               onClick={doGenerate}
