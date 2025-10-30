@@ -32,8 +32,8 @@ export default function ConfigPanel() {
   const [currentConfig, setCurrentConfig] = useState<ConfigResponse | null>(
     null
   );
-  const [hasLogo, setHasLogo] = useState(false);
   const [logoChanged, setLogoChanged] = useState(false);
+  const hasLogo = Boolean(currentConfig?.hasLogo || logo);
 
   // Fetch existing config on mount
   useEffect(() => {
@@ -43,7 +43,6 @@ export default function ConfigPanel() {
         setCurrentConfig(config);
         setPosition(config.logoPosition);
         setScale(config.scaleDown);
-        setHasLogo(!!config.logoPath);
       } catch {}
     };
 
@@ -114,7 +113,6 @@ export default function ConfigPanel() {
       }
 
       setCurrentConfig(config);
-      setHasLogo(!!config.logoPath);
       setLogoChanged(false);
 
       // Show success message
